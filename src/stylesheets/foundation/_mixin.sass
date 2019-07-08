@@ -1,0 +1,45 @@
+@mixin fontSize($size)
+  font-size: (1rem * $size / $font-size-base)
+
+@mixin pc
+  @media only screen and (min-width: $bp-pc)
+    @content
+
+@mixin tb
+  @media only screen and (max-width: ($bp-pc - 1)) and (min-width: $bp-tb)
+    @content
+
+@mixin sp
+  @media only screen and (max-width: ($bp-tb - 1))
+    @content
+
+@mixin tbsp
+  @media only screen and (max-width: ($bp-pc - 1))
+    @content
+
+@mixin smsp
+  @media only screen and (max-width: 320px)
+    @content
+
+@mixin placeholder
+  &:placeholder-shown
+    @content
+  /* google chrome, safari, opera 15+, android, ios */
+  &::-webkit-input-placeholder
+    @content
+  /* firefox 18- */
+  &:-moz-placeholder
+    @content
+    opacity: 1
+  /* firefox 19+ */
+  &::-moz-placeholder
+    @content
+    opacity: 1
+  /* ie 10+ */
+  &:-ms-input-placeholder
+    @content
+  &:invalid
+    @content
+
+@mixin icon($name)
+  font-icon: url('../fonts/#{$name}.svg')
