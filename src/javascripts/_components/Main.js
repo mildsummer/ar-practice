@@ -26,7 +26,7 @@ export default class Main {
       alpha: true,
       localClippingEnabled: true
     });
-    this.renderer.setClearColor(new THREE.Color('black'), 0);
+    this.renderer.setClearColor(new THREE.Color('black'), 1);
     this.renderer.setSize(640, 480);
     this.renderer.gammaOutput = true;
     this.renderer.domElement.style.position = 'absolute';
@@ -153,6 +153,7 @@ export default class Main {
     this.controls.dispose();
     this.camera = new THREE.Camera();
     this.scene.remove(this.camera);
+    this.renderer.setClearColor(new THREE.Color('black'), 0);
     this.initArToolkit();
     this.initMarker();
     this.isAr = true;
