@@ -55,7 +55,7 @@ export default class Main {
     });
     const mesh1 = new THREE.Mesh(geo, mat);
     mesh1.position.set(0, 0.5, 0);
-    this.contents.add(mesh1);
+    // this.contents.add(mesh1);
 
     this.mixer = null;
     const loader = new GLTFLoader();
@@ -87,6 +87,72 @@ export default class Main {
     this.renderer.clippingPlanes.push(this.clippingPlane);
 
     this.scene.add(this.contents);
+
+
+    const particles = 1000;
+    const vertexShader = `
+			attribute float size;
+			attribute float random;
+			varying vec3 vColor;
+			varying float vColorAlpha;
+			uniform float time;
+			
+			float length = 2.0;
+			void main() {
+			  vec3 p = vec3(position);
+				vColor = color;
+				p.y = mod(time / 1000.0 + random * length, length);
+				p.z = p.z + sin((random * time) / 100.0) / 50.0;
+				p.x = p.x + cos((random * time) / 100.0) / 50.0;
+				vColorAlpha = (length - p.y) / length;
+				vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+				gl_PointSize = size * (300.0 / -mvPosition.z);
+				gl_Position = projectionMatrix * mvPosition;
+      }
+    `;
+    const fragmentShader = `
+			uniform sampler2D pointTexture;
+			varying vec3 vColor;
+			varying float vColorAlpha;
+			void main() {
+				gl_FragColor = vec4(vColor, vColorAlpha);
+				gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+			}
+    `;
+    const shaderMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        pointTexture: { value: new THREE.TextureLoader().load('./assets/vendor/spark1.png') },
+        time: { value: 0, type: 'f' }
+      },
+      vertexShader,
+      fragmentShader,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      transparent: true,
+      vertexColors: true
+    });
+    const radius = 0.5;
+    const geometry = new THREE.BufferGeometry();
+    const positions = [];
+    const colors = [];
+    const sizes = [];
+    const randomValues = [];
+    const color = new THREE.Color();
+    for (let i = 0; i < particles; i ++) {
+      positions.push((Math.random() * 2 - 1) * radius);
+      positions.push(0);
+      positions.push((Math.random() * 2 - 1) * radius);
+      color.setHSL(i / particles, 1.0, 0.5);
+      colors.push(color.r, color.g, color.b);
+      sizes.push(0.4);
+      randomValues.push(Math.random());
+    }
+    geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.addAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+    geometry.addAttribute('random', new THREE.Float32BufferAttribute(randomValues, 1));
+    this.particles = new THREE.Points(geometry, shaderMaterial);
+    this.contents.add(this.particles);
   }
 
   initArToolkit() {
@@ -167,7 +233,9 @@ export default class Main {
 
   render() {
     if (!this.isStop) {
+      const time = Date.now();
       requestAnimationFrame(this.render);
+      this.particles.material.uniforms.time.value = time - this.startTime;
       if (this.isAr) {
         if (this.source.ready === false) {
           return;
@@ -178,16 +246,15 @@ export default class Main {
         )));
       }
       if (this.mixer) {
-        const time = Date.now();
         if (!this.startTime) {
           this.startTime = Date.now();
         }
         this.mixer.update((time - this.prevTime) * 0.001);
-        this.horse.position.set(0, (time - this.startTime) / 400 - 1, 0.3);
-        if (this.horse.position.y > 4.5) {
-          this.startTime = Date.now();
-          this.horse.position.set(0, -1, 0.3);
-        }
+        this.horse.position.set(0, ((time - this.startTime) / 400) % 4.5 - 1, 0.3);
+        // if (this.horse.position.y > 4.5) {
+          // this.startTime = Date.now();
+          // this.horse.position.set(0, -1, 0.3);
+        // }
         this.prevTime = time;
       }
       this.controls.update();
